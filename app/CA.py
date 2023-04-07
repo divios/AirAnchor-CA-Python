@@ -1,4 +1,6 @@
 
+import os
+
 from sawtooth_signing.secp256k1 import Secp256k1PublicKey
 from app.protos.CertificateSignedRequest import CertificateSignedRequest
 
@@ -15,7 +17,9 @@ import logging
 from fastapi import HTTPException
 
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("uvicorn")
+
+KEY_PATH = os.environ.get("CA_PRIV_KEY", "priv-key-hex")
 
 class CertificateAuthorityServer:
     
@@ -24,10 +28,12 @@ class CertificateAuthorityServer:
         self._signer = _read_private_key_as_signer()        
         
     def firm(self, csr: CertificateSignedRequest):
+        LOGGER.info("Getting firm requests of %s", csr.as_dict())
+        
         _validate_request(csr)
 
         if not self._keys_repo.authorized(csr.public_key):
-            raise HTTPException(status_code=404)
+            raise HTTPException(status_code=401)
         
         encoded = cbor.dumps(csr.as_dict())
         
@@ -35,7 +41,9 @@ class CertificateAuthorityServer:
 
 
 def _read_private_key_as_signer():
-    with open("priv-key-hex", "r") as f:
+    LOGGER.info("Reading private key from %s", KEY_PATH)
+    
+    with open(KEY_PATH, "r") as f:
         key_hex = f.read()
 
     key_hex = Secp256k1PrivateKey.from_hex(key_hex)

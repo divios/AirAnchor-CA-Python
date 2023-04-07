@@ -2,7 +2,10 @@
 from threading import Lock
 from app.data.watcher import Watcher
 
+import logging
+
 FILE_PATH = "authorized_keys.txt"
+LOGGER = logging.getLogger("uvicorn")
 
 class AuthorizedkeysRepo:
     
@@ -21,7 +24,7 @@ class AuthorizedkeysRepo:
     def _update_keys(self, event):
         if event.src_path == FILE_PATH:
             self._keys = self._read_keys_file()
-            print("Updated keys")
+            LOGGER.info("Updated authorized keys")
 
     def authorized(self, key):
         with self._lock:
