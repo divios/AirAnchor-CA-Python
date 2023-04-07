@@ -1,3 +1,5 @@
 
 .devcontainer
-app/__pycache__
+__pycache__
+priv-key-pem
+priv-key-hex
