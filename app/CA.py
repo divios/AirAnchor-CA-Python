@@ -7,34 +7,41 @@ from sawtooth_signing.secp256k1 import Secp256k1PrivateKey
 from sawtooth_signing import create_context
 from sawtooth_signing import CryptoFactory
 
+from app.data import AuthorizedkeysRepo
+
 import cbor
+import logging
 
 from fastapi import HTTPException
 
 
+LOGGER = logging.getLogger(__name__)
+
 class CertificateAuthorityServer:
     
     def __init__(self):
-        key = _read_private_key()
-
-        self._signer = CryptoFactory(
-            create_context('secp256k1')).new_signer(key)
-        
+        self._keys_repo = AuthorizedkeysRepo()
+        self._signer = _read_private_key_as_signer()        
         
     def firm(self, csr: CertificateSignedRequest):
         _validate_request(csr)
 
-        # Check if it is on allowed public keys
+        if not self._keys_repo.authorized(csr.public_key):
+            raise HTTPException(status_code=404)
         
-        return self._signer.sign(
-            cbor.dumps(csr.as_dict()))
+        encoded = cbor.dumps(csr.as_dict())
+        
+        return self._signer.sign(encoded)
 
 
-def _read_private_key() -> str:
+def _read_private_key_as_signer():
     with open("priv-key-hex", "r") as f:
         key_hex = f.read()
 
-    return Secp256k1PrivateKey.from_hex(key_hex)
+    key_hex = Secp256k1PrivateKey.from_hex(key_hex)
+    
+    return CryptoFactory(
+            create_context('secp256k1')).new_signer(key_hex)
 
 
 def _validate_request(csr: CertificateSignedRequest):
