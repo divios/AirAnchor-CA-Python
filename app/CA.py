@@ -46,10 +46,10 @@ def _read_private_key_as_signer():
     with open(KEY_PATH, "r") as f:
         key_hex = f.read()
 
-    key_hex = Secp256k1PrivateKey.from_hex(key_hex)
+    key_sawadn = Secp256k1PrivateKey.from_hex(key_hex)
     
     return CryptoFactory(
-            create_context('secp256k1')).new_signer(key_hex)
+            create_context('secp256k1')).new_signer(key_sawadn)
 
 
 def _validate_request(csr: CertificateSignedRequest):
