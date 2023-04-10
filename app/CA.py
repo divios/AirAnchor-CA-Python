@@ -1,5 +1,8 @@
 
 import os
+import cbor
+import logging
+from binascii import hexlify
 
 from sawtooth_signing.secp256k1 import Secp256k1PublicKey
 from app.protos.CertificateSignedRequest import CertificateSignedRequest
@@ -10,9 +13,6 @@ from sawtooth_signing import create_context
 from sawtooth_signing import CryptoFactory
 
 from app.data import AuthorizedkeysRepo
-
-import cbor
-import logging
 
 from fastapi import HTTPException
 
@@ -36,8 +36,9 @@ class CertificateAuthorityServer:
             raise HTTPException(status_code=401)
         
         encoded = cbor.dumps(csr.as_dict())
+        encoded_hex = hexlify(encoded)
         
-        return self._signer.sign(encoded)
+        return self._signer.sign(encoded_hex)
 
 
 def _read_private_key_as_signer():
