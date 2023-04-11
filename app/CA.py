@@ -45,7 +45,7 @@ def _read_private_key_as_signer():
     LOGGER.info("Reading private key from %s", KEY_PATH)
     
     with open(KEY_PATH, "r") as f:
-        key_hex = f.read()
+        key_hex = f.read().strip()
 
     key_sawadn = Secp256k1PrivateKey.from_hex(key_hex)
     

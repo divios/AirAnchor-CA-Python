@@ -19,8 +19,8 @@ class AuthorizedkeysRepo:
             with open(FILE_PATH, "r") as f:
                 keys = set(f.readlines())
             
-        return keys
-    
+        return [key.strip() for key in keys]
+   
     def _update_keys(self, event):
         if event.src_path == FILE_PATH:
             self._keys = self._read_keys_file()
