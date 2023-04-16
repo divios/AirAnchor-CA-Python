@@ -33,7 +33,7 @@ class CertificateAuthorityServer:
         
         self._validate_request(csr)
 
-        if not self._keys_repo.authorized(csr.public_key):
+        if not self._keys_repo.authorized(csr.header.sender_public_key):
             raise HTTPException(status_code=401)
                 
         return self._signer.sign(csr.serialize())

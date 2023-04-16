@@ -25,6 +25,9 @@ class CertificateRequest():
     def as_dict(self):
         return asdict(self)
     
+    def serialize(self):
+        return cbor.dumps(self.as_dict())
+    
     @staticmethod
     def create(distinguied_name: str, signer: Signer):
         
