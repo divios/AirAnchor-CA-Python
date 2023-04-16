@@ -1,5 +1,5 @@
-
 .devcontainer
 __pycache__
 priv-key-pem
 priv-key-hex
+*.pyc
