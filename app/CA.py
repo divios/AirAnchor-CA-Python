@@ -5,7 +5,7 @@ import logging
 from binascii import hexlify
 
 from sawtooth_signing.secp256k1 import Secp256k1PublicKey
-from app.protos.CertificateSignedRequest import CertificateSignedRequest
+from app.protos import *
 
 from sawtooth_signing.secp256k1 import Secp256k1PrivateKey
 
@@ -25,36 +25,36 @@ class CertificateAuthorityServer:
     
     def __init__(self):
         self._keys_repo = AuthorizedkeysRepo()
-        self._signer = _read_private_key_as_signer()        
-        
-    def firm(self, csr: CertificateSignedRequest):
+        self._context = create_context('secp256k1')
+        self._signer = self._read_private_key_as_signer()     
+
+    def firm(self, csr: CertificateRequest):
         LOGGER.info("Getting firm requests of %s", csr.as_dict())
         
-        _validate_request(csr)
+        self._validate_request(csr)
 
-        if not self._keys_repo.authorized(csr.public_key):
+        if not self._keys_repo.authorized(csr.header.sender_public_key):
             raise HTTPException(status_code=401)
+                
+        return self._signer.sign(csr.serialize())
+
+
+    def _read_private_key_as_signer(self):
+        LOGGER.info("Reading private key from %s", KEY_PATH)
         
-        encoded = cbor.dumps(csr.as_dict())
-        encoded_hex = hexlify(encoded)
+        with open(KEY_PATH, "r") as f:
+            key_hex = f.read().strip()
+
+        key_sawadn = Secp256k1PrivateKey.from_hex(key_hex)
         
-        return self._signer.sign(encoded_hex)
+        return CryptoFactory(self._context).new_signer(key_sawadn)
 
 
-def _read_private_key_as_signer():
-    LOGGER.info("Reading private key from %s", KEY_PATH)
-    
-    with open(KEY_PATH, "r") as f:
-        key_hex = f.read().strip()
+    def _validate_request(self, csr: CertificateRequest):
+        try:
+            pub_key = Secp256k1PublicKey.from_hex(csr.header.sender_public_key)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid public key")
 
-    key_sawadn = Secp256k1PrivateKey.from_hex(key_hex)
-    
-    return CryptoFactory(
-            create_context('secp256k1')).new_signer(key_sawadn)
-
-
-def _validate_request(csr: CertificateSignedRequest):
-    try:
-        Secp256k1PublicKey.from_hex(csr.public_key)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid public key")
+        if not self._context.verify(csr.signature, csr.header.serialize(), pub_key):
+            raise HTTPException(status_code=400, detail="Invalid signature")
